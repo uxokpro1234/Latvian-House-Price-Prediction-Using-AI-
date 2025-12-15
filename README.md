@@ -3,6 +3,7 @@
 <p><strong>Note:</strong> The CSV file used for this project was taken from <a href="https://www.kaggle.com/datasets/dmitryyemelyanov/riga-real-estate-dataset-cleaned" target="_blank">Kaggle: Riga Real Estate Dataset (cleaned)</a>.</p>
 
 ***Warning: This data is 6 years old!!!***
+<br>
 
 <h1>Explanation on **construction** types in csv file.</h1>
 
@@ -63,7 +64,7 @@
       <td>Brick-Panel</td>
       <td>Hybrid – lower floors brick, upper floors panel</td>
 </table>
-
+<br>
 <h2>Why it CAN be done:</h2>
 <ul>
   <li><strong>Patterns in historical data:</strong> AI can learn relationships between features (location, size, age) and prices.</li>
@@ -71,7 +72,7 @@
   <li><strong>Multiple factors:</strong> AI can use many features like neighborhood, schools, crime rates, economic indicators.</li>
   <li><strong>Continuous learning:</strong> With new data and feedback, AI models can improve predictions over time.</li>
 </ul>
-
+<br>
 <h2>Why it CANNOT be done perfectly:</h2>
 <ul>
   <li><strong>Market volatility:</strong> Sudden economic crises, policy changes, or disasters are unpredictable.</li>
@@ -79,7 +80,7 @@
   <li><strong>Human factors:</strong> Emotional or speculative decisions by buyers/sellers cannot be fully modeled.</li>
   <li><strong>Overfitting risk:</strong> Models may memorize past data and fail on new properties.</li>
 </ul>
-
+<br>
 <h2>Conclusion:</h2>
 <p>AI can provide useful estimates and help make informed decisions, but it cannot guarantee exact future prices. It works best as a supporting tool, not a crystal ball.</p>
 <br>
