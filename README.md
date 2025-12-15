@@ -1,5 +1,7 @@
 # Latvian-House-Price-Prediction-Using-AI-
 **Using XGBOOST**
+<p>This code trains an XGBoost regression model to predict rent prices from a CSV dataset, using numerical and one-hot encoded categorical features, saves the model and encoder, and includes a function to predict rent interactively based on user input.</p>
+<br>
 
 ```python
 import pandas as pd
@@ -138,9 +140,10 @@ Longitude: 24.1398842
 💰 Predicted rent: €47696.54
 ```
 
-<h1>Implementing flow method in previous code(Tensorflow is complicated, i dont need that)</h1>h1>
-<p>Flow is a visual programming environment where you can create AI, ML pipelines, or automation without writing tons of code. You connect “blocks” (nodes) representing data input, transformations, models, or outputs, forming a “flow” from start to finish.</p>p
+<h1>Implementing flow method in previous code(Tensorflow is complicated, i dont need that)</h1>
+<p>Flow is a visual programming environment where you can create AI, ML pipelines, or automation without writing tons of code. You connect “blocks” (nodes) representing data input, transformations, models, or outputs, forming a “flow” from start to finish.</p>
     <br>
+    
 ```python
 import pandas as pd
 import xgboost as xgb
@@ -248,3 +251,60 @@ if __name__ == "__main__":
     predicted_price = predict_rent(user_input)
     print(f"\n💰 Predicted rent: €{predicted_price:.2f}")
 ```
+<table border="1">
+  <thead>
+    <tr>
+      <th>Value</th>
+      <th>Likely Meaning / Construction Type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>LT proj.</td>
+      <td>“Latvian Project” – typical prefabricated panel building (Soviet-era style)</td>
+    </tr>
+    <tr>
+      <td>602.</td>
+      <td>Panel building series from the 1960s–1980s</td>
+    </tr>
+    <tr>
+      <td>P. kara</td>
+      <td>“Pirmā kara” – Pre-war buildings (older masonry)</td>
+    </tr>
+    <tr>
+      <td>Jaun.</td>
+      <td>Jauna / New – Modern construction</td>
+    </tr>
+    <tr>
+      <td>Specpr.</td>
+      <td>Special project (often customized or unusual type)</td>
+    </tr>
+    <tr>
+      <td>Hrušč.</td>
+      <td>Khrushchyovka – Soviet 1–5 story panel buildings</td>
+    </tr>
+    <tr>
+      <td>M. ģim.</td>
+      <td>Mazā ģimenes – small family house, low-rise</td>
+    </tr>
+    <tr>
+      <td>Renov.</td>
+      <td>Renovated building</td>
+    </tr>
+    <tr>
+      <td>103.</td>
+      <td>Another panel building series, similar to 602</td>
+    </tr>
+    <tr>
+      <td>Brick</td>
+      <td>Brick construction</td>
+    </tr>
+    <tr>
+      <td>Masonry</td>
+      <td>Masonry construction (brick/stone)</td>
+    </tr>
+    <tr>
+      <td>Brick-Panel</td>
+      <td>Hybrid – lower floors brick, upper floors panel</td>
+    </t
+
