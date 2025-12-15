@@ -2,6 +2,7 @@
 
 <p><strong>Note:</strong> The CSV file used for this project was taken from <a href="https://www.kaggle.com/datasets/dmitryyemelyanov/riga-real-estate-dataset-cleaned" target="_blank">Kaggle: Riga Real Estate Dataset (cleaned)</a>.</p>
 <h1>Explanation on **construction** types in csv file.</h1>
+
 <br>
 <table border="1">
   <thead>
@@ -58,7 +59,7 @@
     <tr>
       <td>Brick-Panel</td>
       <td>Hybrid – lower floors brick, upper floors panel</td>
-    </t
+</table>
 
 <h2>Why it CAN be done:</h2>
 <ul>
