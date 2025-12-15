@@ -1,6 +1,6 @@
-# Latvian-House-Price-Prediction-Using-AI-
-<br>
 <h1>Can AI Predict House Prices?</h1>
+
+<p><strong>Note:</strong> The CSV file used for this project was taken from <a href="https://www.kaggle.com/datasets/dmitryyemelyanov/riga-real-estate-dataset-cleaned" target="_blank">Kaggle: Riga Real Estate Dataset (cleaned)</a>.</p>
 
 <h2>Why it CAN be done:</h2>
 <ul>
