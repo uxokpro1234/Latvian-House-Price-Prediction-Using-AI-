@@ -401,10 +401,28 @@ model.fit(
     verbose=1
 )
 ```
-<br>
 <p>This code stops epohs when the logaritm stops improving. So instead of wasting time, and space on my hard drive, i've added this.</p>
+<br>
+<h1>Also i log-transformed the target (price).</h1>
+<p>Rent prices are usually skewed, so we have to IMPROVE regression as much as we can. Later it will predict better.</p>
+<p>I've replaced THIS</p>
 
+```python
+y = df[TARGET].values
 ```
+<br>
+<p>With</p>
+
+```python
+y = np.log1p(df[TARGET].values)
+```
+<br>
+<p>And prediction line too</p>
+
+```python
+price = np.expm1(model.predict(X.values)[0][0])
+```
+
 Epoch 50/50
 117/117 ━━━━━━━━━━━━━━━━━━━━ 0s 868us/step - loss: 1027113984.0000 - mae: 14739.3096 - val_loss: 831690176.0000 - val_mae: 12621.5293    
 TensorFlow model, encoder and scaler saved
