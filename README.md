@@ -213,25 +213,26 @@ Longitude: 24.1398842
 <br>
     
 ```python
-import pandas as pd
-import xgboost as xgb
-from sklearn.preprocessing import OneHotEncoder
-import joblib
 import os
-from prefect import flow, task
+import pandas as pd
+import joblib
+import tensorflow as tf
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 # CONFIG
 DATA_FILE = 'riga.csv'
-MODEL_FILE = 'latvia_rent_model_xgb.pkl'
+MODEL_FILE = 'latvia_rent_model_tf.keras'
 ENCODER_FILE = 'latvia_rent_encoder.pkl'
+SCALER_FILE = 'latvia_rent_scaler.pkl'
 
-COLUMNS = ['listing_type','area','address','rooms','area_sqm','floor','total_floors','building_type','construction','amenities','price','latitude','longitude']
+COLUMNS = ['listing_type','area','address','rooms','area_sqm','floor',
+           'total_floors','building_type','construction','amenities',
+           'price','latitude','longitude']
+
 NUMERICAL = ['rooms','area_sqm','floor','total_floors','latitude','longitude']
 CATEGORICAL = ['listing_type','area','building_type','construction','amenities']
 TARGET = 'price'
 
-# TASKS
-@task
 def load_csv(path):
     if not os.path.exists(path):
         raise FileNotFoundError("Dataset not found")
@@ -241,7 +242,6 @@ def load_csv(path):
     df.columns = COLUMNS
     return df
 
-@task
 def preprocess_data(df):
     df = df.drop(columns=['address'])
     for col in NUMERICAL + [TARGET]:
@@ -250,79 +250,95 @@ def preprocess_data(df):
     df[TARGET] = df[TARGET].fillna(df[TARGET].median())
     return df
 
-@task
-def encode_categorical(df):
-    encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
-    X_cat = encoder.fit_transform(df[CATEGORICAL])
-    X_cat_df = pd.DataFrame(X_cat, columns=encoder.get_feature_names_out(CATEGORICAL))
-    return encoder, X_cat_df
+def encode_and_scale(df, fit=True, encoder=None, scaler=None):
+    # categorial
+    if fit:
+        encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
+        X_cat = encoder.fit_transform(df[CATEGORICAL])
+    else:
+        X_cat = encoder.transform(df[CATEGORICAL])
 
-@task
-def prepare_features(df, X_cat_df):
-    X_num = df[NUMERICAL].reset_index(drop=True)
-    X = pd.concat([X_num, X_cat_df], axis=1)
-    y = df[TARGET]
-    return X, y
+    # numeric
+    if fit:
+        scaler = StandardScaler()
+        X_num = scaler.fit_transform(df[NUMERICAL])
+    else:
+        X_num = scaler.transform(df[NUMERICAL])
 
-@task
-def train_model(X, y):
-    model = xgb.XGBRegressor(
-        objective='reg:squarederror',
-        n_estimators=300,
-        learning_rate=0.05,
-        max_depth=6,
-        random_state=42
+    X = pd.DataFrame(
+        data = np.hstack([X_num, X_cat]),
+        columns = [f"num_{c}" for c in NUMERICAL] + list(encoder.get_feature_names_out(CATEGORICAL))
     )
-    model.fit(X, y)
+
+    return X, encoder, scaler
+
+def build_tf_model(input_dim: int) -> tf.keras.Model:
+    model = tf.keras.Sequential([
+        tf.keras.layers.Input(shape=(input_dim,)),
+        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(64, activation='relu'),
+        tf.keras.layers.Dense(1)  # regression
+    ])
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+        loss='mse',
+        metrics=['mae']
+    )
     return model
 
-@task
-def save_artifacts(model, encoder):
-    joblib.dump(model, MODEL_FILE)
-    joblib.dump(encoder, ENCODER_FILE)
-    print("Model and encoder saved")
+def train_tf_model():
+    df = load_csv(DATA_FILE)
+    df = preprocess_data(df)
 
-@task
-def predict_rent(user_input):
-    df = pd.DataFrame([user_input])
+    # introducing X, y
+    X, encoder, scaler = encode_and_scale(df, fit=True)
+    y = df[TARGET].values
+
+    # build, and learning
+    model = build_tf_model(X.shape[1])
+    model.fit(X.values, y, epochs=50, batch_size=32, validation_split=0.1, verbose=1)
+
+    # saving artiffacts
+    model.save(MODEL_FILE)
+    joblib.dump(encoder, ENCODER_FILE)
+    joblib.dump(scaler, SCALER_FILE)
+    print("TensorFlow model, encoder and scaler saved")
+
+def predict_rent_tf(user_input: dict) -> float:
+    # loading artiffacts
+    model = tf.keras.models.load_model(MODEL_FILE)
     encoder = joblib.load(ENCODER_FILE)
-    model = joblib.load(MODEL_FILE)
-    X_cat = encoder.transform(df[CATEGORICAL])
-    X_cat_df = pd.DataFrame(X_cat, columns=encoder.get_feature_names_out(CATEGORICAL))
-    X_num = df[NUMERICAL]
-    X_final = pd.concat([X_num, X_cat_df], axis=1)
-    price = model.predict(X_final)[0]
+    scaler = joblib.load(SCALER_FILE)
+
+    df = pd.DataFrame([user_input])
+    # types
+    for col in NUMERICAL:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+    df[NUMERICAL] = df[NUMERICAL].fillna(df[NUMERICAL].median())
+
+    # coding and scaling (без fit)
+    X, _, _ = encode_and_scale(df, fit=False, encoder=encoder, scaler=scaler)
+    price = float(model.predict(X.values)[0][0])
     return price
 
-@task
-def update_model_with_real_price(user_input, real_price):
-    """Append new data and retrain model incrementally"""
+def update_model_with_real_price_tf(user_input, real_price):
     df = pd.read_csv(DATA_FILE, header=None)
     df.columns = COLUMNS
     new_row = user_input.copy()
     new_row['price'] = real_price
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
     df.to_csv(DATA_FILE, index=False, header=False)
-    # retrain model
-    df = preprocess_data(df)
-    encoder, X_cat_df = encode_categorical(df)
-    X, y = prepare_features(df, X_cat_df)
-    model = train_model(X, y)
-    save_artifacts(model, encoder)
-    print(f"Model updated with new price: €{real_price}")
 
-# FLOW
-@flow
-def rent_price_flow():
-    # Training
-    df = load_csv(DATA_FILE)
-    df = preprocess_data(df)
-    encoder, X_cat_df = encode_categorical(df)
-    X, y = prepare_features(df, X_cat_df)
-    model = train_model(X, y)
-    save_artifacts(model, encoder)
+    train_tf_model()
 
-    # Prediction
+if __name__ == "__main__":
+    import numpy as np
+
+    # learning
+    train_tf_model()
+
+    # simple CLI-predict
     user_input = {
         'listing_type': input("Listing type: "),
         'area': input("Area: "),
@@ -336,17 +352,15 @@ def rent_price_flow():
         'latitude': float(input("Latitude: ")),
         'longitude': float(input("Longitude: "))
     }
-    predicted_price = predict_rent(user_input)
-    print(f"\n💰 Predicted rent: €{predicted_price:.2f}")
 
-    # ask user if they know the real price
+    predicted_price = predict_rent_tf(user_input)
+    print(f"\n💰 Predicted rent (TF): €{predicted_price:.2f}")
+
     feedback = input("Do you know the real price for this property? (y/n): ").lower()
     if feedback == 'y':
         real_price = float(input("Enter the real price: "))
-        update_model_with_real_price(user_input, real_price)
-
-if __name__ == "__main__":
-    rent_price_flow()
+        update_model_with_real_price_tf(user_input, real_price)
+        print(f"Model updated with new price: €{real_price}")
 ```
 <br>
 <p>I will add output later, because i have to do other stuff for now.</p>
