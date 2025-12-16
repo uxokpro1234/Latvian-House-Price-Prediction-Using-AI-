@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import joblib
+import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
@@ -36,14 +37,12 @@ def preprocess_data(df):
     return df
 
 def encode_and_scale(df, fit=True, encoder=None, scaler=None):
-    # categorial
     if fit:
         encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
         X_cat = encoder.fit_transform(df[CATEGORICAL])
     else:
         X_cat = encoder.transform(df[CATEGORICAL])
 
-    # numeric
     if fit:
         scaler = StandardScaler()
         X_num = scaler.fit_transform(df[NUMERICAL])
@@ -51,22 +50,23 @@ def encode_and_scale(df, fit=True, encoder=None, scaler=None):
         X_num = scaler.transform(df[NUMERICAL])
 
     X = pd.DataFrame(
-        data = np.hstack([X_num, X_cat]),
-        columns = [f"num_{c}" for c in NUMERICAL] + list(encoder.get_feature_names_out(CATEGORICAL))
+        data=np.hstack([X_num, X_cat]),
+        columns=[f"num_{c}" for c in NUMERICAL] + list(encoder.get_feature_names_out(CATEGORICAL))
     )
-
     return X, encoder, scaler
 
 def build_tf_model(input_dim: int) -> tf.keras.Model:
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(input_dim,)),
         tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dropout(0.3),
         tf.keras.layers.Dense(64, activation='relu'),
-        tf.keras.layers.Dense(1)  # regression
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.Dense(1)
     ])
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0005),
         loss='mse',
         metrics=['mae']
     )
@@ -76,36 +76,56 @@ def train_tf_model():
     df = load_csv(DATA_FILE)
     df = preprocess_data(df)
 
-    # introducing X, y
+    # log-transform target to stabilize skewed prices
+    y = np.log1p(df[TARGET].values)
+
     X, encoder, scaler = encode_and_scale(df, fit=True)
-    y = df[TARGET].values
 
-    # build, and learning
     model = build_tf_model(X.shape[1])
-    model.fit(X.values, y, epochs=50, batch_size=32, validation_split=0.1, verbose=1)
 
-    # saving artiffacts
+    early_stop = tf.keras.callbacks.EarlyStopping(
+        monitor='val_loss',
+        patience=5,
+        restore_best_weights=True
+    )
+
+    reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
+        monitor='val_loss',
+        factor=0.5,
+        patience=3,
+        min_lr=1e-6,
+        verbose=1
+    )
+
+    model.fit(
+        X.values, y,
+        epochs=200,
+        batch_size=32,
+        validation_split=0.1,
+        callbacks=[early_stop, reduce_lr],
+        verbose=1
+    )
+
+    # save everything
     model.save(MODEL_FILE)
     joblib.dump(encoder, ENCODER_FILE)
     joblib.dump(scaler, SCALER_FILE)
-    print("TensorFlow model, encoder and scaler saved")
+    print("TensorFlow model, encoder, and scaler saved")
 
 def predict_rent_tf(user_input: dict) -> float:
-    # loading artiffacts
     model = tf.keras.models.load_model(MODEL_FILE)
     encoder = joblib.load(ENCODER_FILE)
     scaler = joblib.load(SCALER_FILE)
 
     df = pd.DataFrame([user_input])
-    # types
     for col in NUMERICAL:
         df[col] = pd.to_numeric(df[col], errors='coerce')
     df[NUMERICAL] = df[NUMERICAL].fillna(df[NUMERICAL].median())
 
-    # coding and scaling (без fit)
     X, _, _ = encode_and_scale(df, fit=False, encoder=encoder, scaler=scaler)
-    price = float(model.predict(X.values)[0][0])
-    return price
+    log_price = model.predict(X.values)[0][0]
+    price = np.expm1(log_price)  # invert log1p transform
+    return float(price)
 
 def update_model_with_real_price_tf(user_input, real_price):
     df = pd.read_csv(DATA_FILE, header=None)
@@ -114,16 +134,11 @@ def update_model_with_real_price_tf(user_input, real_price):
     new_row['price'] = real_price
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
     df.to_csv(DATA_FILE, index=False, header=False)
-
     train_tf_model()
 
 if __name__ == "__main__":
-    import numpy as np
-
-    # learning
     train_tf_model()
 
-    # simple CLI-predict
     user_input = {
         'listing_type': input("Listing type: "),
         'area': input("Area: "),
