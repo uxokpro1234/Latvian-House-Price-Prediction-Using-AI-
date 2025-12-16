@@ -206,9 +206,18 @@ Longitude: 24.1398842
 💰 Predicted rent: €61743.69
 ```
 <br>
-<h1>There is a way to make prediction more accurate.</h1>
-<p>We can achieve that by implementing Tensorflow method in previous code (previousle i used prefect flow, BUT THAT was wrong. I was wrong. Okay. Dont throw rocks at me)</p>
-<p>Flow is a visual programming environment where you can create AI, ML pipelines, or automation without writing tons of code. You connect “blocks” (nodes) representing data input, transformations, models, or outputs, forming a “flow” from start to finish.</p>
+<h1>Improving Prediction Accuracy</h1>
+
+<p>
+Prediction accuracy is improved by using a TensorFlow-based model instead of a visual flow approach.
+The pipeline is fully code-driven, giving precise control over preprocessing, training, and inference.
+</p>
+
+<p>
+Numerical features are scaled, categorical features are one-hot encoded, and a neural network
+is trained for rent price prediction. All preprocessing artifacts are saved to ensure
+consistent results during prediction.
+</p>
 
 <br>
     
