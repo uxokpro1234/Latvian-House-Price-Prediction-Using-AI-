@@ -1,9 +1,9 @@
 <h1>Can AI Predict House Prices?</h1>
 <p>I will be using Tensorflow and XGBoosting.</p>
 <br>
-TensorFlow is mainly used for deep learning and neural networks.
+<p>TensorFlow is mainly used for deep learning and neural networks.</p>
 <br>
-XGBoost is mainly used for gradient boosting on structured/tabular data.
+<p>XGBoost is mainly used for gradient boosting on structured/tabular data.</p>
 <br>
 
 <p><strong>Note:</strong> The CSV file used for this project was taken from <a href="https://www.kaggle.com/datasets/dmitryyemelyanov/riga-real-estate-dataset-cleaned" target="_blank">Kaggle: Riga Real Estate Dataset (cleaned)</a>.</p>
