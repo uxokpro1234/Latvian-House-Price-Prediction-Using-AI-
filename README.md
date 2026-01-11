@@ -96,50 +96,68 @@
 
 ```python
 import pandas as pd
+import numpy as np
 import xgboost as xgb
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.model_selection import train_test_split, cross_val_predict
 import joblib
 import os
 
-data_file = 'riga.csv'
-model_file = 'latvia_rent_model_xgb.pkl'
-encoder_file = 'latvia_rent_encoder.pkl'
+DATA_FILE = 'riga.csv'
+MODEL_FILE = 'latvia_rent_model_xgb.pkl'
+ENCODER_FILE = 'latvia_rent_encoder.pkl'
 
-COLUMNS = ['listing_type','area','address','rooms','area_sqm','floor','total_floors','building_type','construction','amenities','price','latitude','longitude']
+COLUMNS = ['listing_type','area','address','rooms','area_sqm','floor',
+           'total_floors','building_type','construction','amenities',
+           'price','latitude','longitude']
 
 NUMERICAL = ['rooms','area_sqm','floor','total_floors','latitude','longitude']
-
 CATEGORICAL = ['listing_type','area','building_type','construction','amenities']
-
 TARGET = 'price'
 
-if not os.path.exists(data_file):
+if not os.path.exists(DATA_FILE):
     raise FileNotFoundError("Dataset not found")
 
-data = pd.read_csv(data_file, header=None)
+data = pd.read_csv(DATA_FILE, header=None)
 
 if data.shape[1] != len(COLUMNS):
-    raise ValueError(
-        f"CSV column count mismatch: expected {len(COLUMNS)}, got {data.shape[1]}"
-    )
+    raise ValueError(f"CSV column count mismatch: expected {len(COLUMNS)}, got {data.shape[1]}")
 
 data.columns = COLUMNS
 data = data.drop(columns=['address'])
+
 for col in NUMERICAL + [TARGET]:
     data[col] = pd.to_numeric(data[col], errors='coerce')
 
 data[NUMERICAL] = data[NUMERICAL].fillna(data[NUMERICAL].median())
 data[TARGET] = data[TARGET].fillna(data[TARGET].median())
+
 encoder = OneHotEncoder(handle_unknown='ignore', sparse_output=False)
 X_cat = encoder.fit_transform(data[CATEGORICAL])
 X_num = data[NUMERICAL].reset_index(drop=True)
-X_cat_df = pd.DataFrame(
-    X_cat,
-    columns=encoder.get_feature_names_out(CATEGORICAL)
-)
+X_cat_df = pd.DataFrame(X_cat, columns=encoder.get_feature_names_out(CATEGORICAL))
 
 X = pd.concat([X_num, X_cat_df], axis=1)
 y = data[TARGET]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+def evaluate_regression(y_true, y_pred):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    
+    mae = np.mean(np.abs(y_true - y_pred))
+    mse = np.mean((y_true - y_pred) ** 2)
+    rmse = np.sqrt(mse)
+    
+    if len(y_true) < 2:
+        r2 = float('nan')
+    else:
+        ss_res = np.sum((y_true - y_pred) ** 2)
+        ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+        r2 = 1 - (ss_res / ss_tot)
+    
+    return {"R²": r2, "MAE": mae, "MSE": mse, "RMSE": rmse}
 
 model = xgb.XGBRegressor(
     objective='reg:squarederror',
@@ -148,16 +166,26 @@ model = xgb.XGBRegressor(
     max_depth=6,
     random_state=42
 )
+model.fit(X_train, y_train)
 
-model.fit(X, y)
+joblib.dump(model, MODEL_FILE)
+joblib.dump(encoder, ENCODER_FILE)
+print("Model trained and saved successfully")
 
-joblib.dump(model, model_file)
-joblib.dump(encoder, encoder_file)
-print("✅ Model trained successfully")
+y_pred_test = model.predict(X_test)
+metrics_test = evaluate_regression(y_test.values, y_pred_test)
+print("Test Set Metrics:")
+for k,v in metrics_test.items():
+    print(f"{k}: {v:.2f}")
+
+y_pred_cv = cross_val_predict(model, X, y, cv=5)
+metrics_cv = evaluate_regression(y, y_pred_cv)
+print("\n5-Fold Cross-Validation Metrics:")
+for k,v in metrics_cv.items():
+    print(f"{k}: {v:.2f}")
 
 def predict_rent():
     print("\nEnter rental details\n")
-
     user = {
         'listing_type': input("Listing type: "),
         'area': input("Area: "),
@@ -172,20 +200,15 @@ def predict_rent():
         'longitude': float(input("Longitude: "))
     }
 
-    df = pd.DataFrame([user])
-    enc = joblib.load(encoder_file)
-    mdl = joblib.load(model_file)
-    Xc = enc.transform(df[CATEGORICAL])
-    Xn = df[NUMERICAL]
-    Xc_df = pd.DataFrame(
-        Xc,
-        columns=enc.get_feature_names_out(CATEGORICAL)
-    )
-
+    df_user = pd.DataFrame([user])
+    enc = joblib.load(ENCODER_FILE)
+    mdl = joblib.load(MODEL_FILE)
+    Xc = enc.transform(df_user[CATEGORICAL])
+    Xn = df_user[NUMERICAL]
+    Xc_df = pd.DataFrame(Xc, columns=enc.get_feature_names_out(CATEGORICAL))
     X_final = pd.concat([Xn, Xc_df], axis=1)
     price = mdl.predict(X_final)[0]
-    print(f"\n💰 Predicted rent: €{price:.2f}")
-predict_rent()
+    print(f"Predicted rent: €{price:.2f}")
 ```
 <br>
 <h1>Lets look at the output:</h1>
@@ -193,7 +216,7 @@ predict_rent()
 <br>
 
 ```
-✅ Model trained successfully
+Model trained successfully
 
 Enter rental details
 
@@ -209,7 +232,7 @@ Amenities: All amentities
 Latitude: 56.9750922
 Longitude: 24.1398842
 
-💰 Predicted rent: €61743.69
+Predicted rent: €61743.69
 ```
 <br>
 <h1>Improving Prediction Accuracy</h1>
