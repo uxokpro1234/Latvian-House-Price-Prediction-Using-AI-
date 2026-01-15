@@ -90,14 +90,9 @@
 <h2>Conclusion:</h2>
 <p>AI can provide useful estimates and help make informed decisions, but it cannot guarantee exact future prices. It works best as a supporting tool, not a crystal ball.</p>
 <br>
-<h2>Okay, enough of the annoying text, lets get to coding.</h2>
-<p>This code trains an XGBoost regression model to predict rent prices from a CSV dataset, using numerical and one-hot encoded categorical features, saves the model and encoder, and includes a function to predict rent interactively based on user input.</p>
-<br>
 
-<h1>Latvia House Price Prediction</h1>
 
-<p>Predict rent or sale prices in Latvia using <strong>XGBoost</strong> and <strong>TensorFlow</strong>.</p>
-
+<h1>House Price Prediction Models</h1>
 <h2>XGBoost Model</h2>
 <p>Trains an XGBoost regressor to predict property prices based on numerical and categorical features. Preprocessing includes handling missing values and one-hot encoding categorical variables.</p>
 <br>
