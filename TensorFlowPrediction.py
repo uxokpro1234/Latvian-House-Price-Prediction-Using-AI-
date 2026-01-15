@@ -105,7 +105,7 @@ def train_tf_model():
     model.save(MODEL_FILE)
     joblib.dump(encoder, ENCODER_FILE)
     joblib.dump(scaler, SCALER_FILE)
-    print("✅ TensorFlow model, encoder, and scaler saved for 'For sale'")
+    print("TensorFlow model, encoder, and scaler saved for 'For sale'")
 
 def predict_sale_tf(user_input: dict) -> float:
     model = tf.keras.models.load_model(MODEL_FILE)
