@@ -147,7 +147,7 @@ if __name__ == "__main__":
     }
 
     predicted_price = predict_sale_tf(user_input)
-    print(f"\n💰 Predicted sale price (TF): €{predicted_price:.2f}")
+    print(f"\nPredicted sale price (TF): €{predicted_price:.2f}")
 
     feedback = input("Do you know the real price for this property? (y/n): ").lower()
     if feedback == 'y':
