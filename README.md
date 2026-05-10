@@ -392,3 +392,9 @@ if __name__ == "__main__":
   <li>Artifacts saved for consistent prediction</li>
 </ul>
 
+<h2>Conclusion</h2>
+<ul>
+  <li>XGBoost performed significatly better than Tensorflow, because it works better with mized, splendid data which has different values.</li>
+  <li>Tensorflow has more potential, if given a lot of data. XGBoost doesnt require that much data.</li>
+</ul>
+
