@@ -1,0 +1,13 @@
+services:
+  bot:
+    build: .
+    container_name: riga_price_bot
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+    env_file:
+      - .env
+    # environment:
+    #   - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+    command: ["python", "-m", "src.bot"]

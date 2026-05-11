@@ -1,0 +1,22 @@
+# Core ML
+numpy
+pandas
+scikit-learn
+joblib
+
+# Specialized Boosting
+xgboost
+lightgbm
+catboost
+
+# Scrapers
+requests
+beautifulsoup4
+
+# Interfaces
+python-telegram-bot[joblib]
+python-dotenv
+shap
+
+# Utils
+scipy
